@@ -1,0 +1,119 @@
+# Repo: `azureDevOpsPrototypes/azureDevOpsPrototypes`
+# File: sharing-variables-between-jobs.yaml
+#
+# Desc:
+# This sample shows how to pass groups of variables into a template.
+# This example comes from:
+# https://medium.com/microsoftazure/how-to-pass-variables-in-azure-pipelines-yaml-tasks-5c81c5d31763
+#
+# Usage:
+# This is useful when you have a job template which produces variables that need to be passed to following jobs and
+# job templates.
+
+# Variables:
+# Global variables can be defined below.
+##
+# These are the only branches we will run the pipeline for.
+trigger:
+  #batch: true
+  branches:
+    include:
+    - develop/*
+    - feature/*
+    - master
+    exclude:
+    - releases/old*
+  paths:
+    exclude:
+    - 'docs/' # dont trigger when we update some Markdown.
+    - 'README.md'
+pr: none # Don't run against PRs
+
+# Global Variables that are common for all stages, jobs and steps.
+variables:
+  VMIMAGENAME: 'ubuntu-latest'
+  REPO_NAME: '$(Build.Repository.Name)'
+  BRANCH_NAME: '$(Build.SourceBranchName)'
+  System.Debug: 'true' #set to true if you want verbose pipeline output.
+
+# Use a repo as a resource for pipeline templates to help us keep DRY.
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops
+#resources:
+#  repositories:
+#    - repository: templates
+#      type: git
+#      name: 'Azure DevOps Utility/AzureDevOpsTemplates'
+#      # If you want to use a particular, fixed version of the template, be sure to pin to a ref. Refs are either
+#      # branches (refs/heads/<name>) or tags (refs/tags/<name>). If you want to pin a specific commit, first create a
+#      # tag pointing to that commit, then pin to that tag.
+#      #ref: refs/tags/v1.5 # optional ref to pin to
+#      ref: refs/heads/develop/bes067
+
+# pipeline display name
+name: $(BuildDefinitionName)_$(SourceBranchName).$(DayOfYear)$(Rev:.r)
+
+stages:
+
+  - stage: stage00
+    pool:
+      vmImage: '$(VMIMAGENAME)'
+    displayName: 'Stage 00'
+    #condition: startsWith(variables['Build.SourceBranch'], 'refs/heads/develop/')
+    variables:
+      STAGE00_VAR00: 'STAGE00_VAR00_VALUE'
+      STAGE00_VAR01: 'STAGE00_VAR01_VALUE'
+      STAGE00_VAR02: 'STAGE00_VAR02_VALUE'
+
+    jobs:
+      - job: job00
+        pool:
+          vmImage: '$(VMIMAGENAME)'
+        displayName: 'Job 00'
+        #dependsOn:
+        #condition:
+        variables:
+          JOB00_VAR00: 'JOB00_VAR00_VALUE'
+          JOB00_VAR01: 'JOB00_VAR01_VALUE'
+          JOB00_VAR02: 'JOB00_VAR02_VALUE'
+        steps:
+          - checkout: none
+          # Sets BASH00STEP00_VAR00 to "BASH00STEP00_VAR00_VALUE", then mark it as output variable
+          - bash: |
+              BASH00STEP00_VAR00="BASH00STEP00_VAR00_VALUE"
+              echo "##vso[task.setvariable variable=BASH00STEP00_VAR00;isOutput=true]$BASH00STEP00_VAR00"
+            name: job00Bash00
+            displayName: 'setting var and mark as output'
+#          - pwsh: |
+#              echo "##vso[task.setvariable variable=EnvironmentName;isOutput=true]$($env:ENVIRONMENTNAME)"
+#            name: outputVars
+
+          # Show output variable in the same job
+          - bash: |
+              echo "BASH00STEP00_VAR00: $(job00Bash00.BASH00STEP00_VAR00)"
+            name: job00Bash01
+            displayName: 'display var label and value'
+
+      # define our second job which will pull a variable out of the first job
+      - job: job01
+        pool:
+          vmImage: '$(VMIMAGENAME)'
+        displayName: 'Job 01'
+        dependsOn: job00
+        variables:
+          BASH00STEP00_VAR00: $[ dependencies.job00.outputs['job00Bash00.BASH00STEP00_VAR00'] ] # here we tell the pipeline yaml to go and get the var we want from job00 outputs.
+
+        steps:
+          - checkout: none
+          # The variable is now available for expansion within the job
+          - bash: |
+              echo "dependencies.job00.outputs['job00Bash00.BASH00STEP00_VAR00']: $(BASH00STEP00_VAR00)"
+            name: job01Bash00
+            displayName: 'display var label and value from job00'
+
+          # To send the variable to the script as environmental variable, it needs to be set in the env dictionary
+          - bash: |
+              echo "BASH00STEP00_VAR00: $BASH00STEP00_VAR00"
+            name: job01Bash01
+            displayName: 'display var label and value from job00 from bash env assignment'
+            env:
+              BASH00STEP00_VAR00: $(BASH00STEP00_VAR00) # here we insert the variable into the env for this shell.

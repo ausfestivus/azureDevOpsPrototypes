@@ -1,0 +1,65 @@
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
+
+parameters:
+  additionalVariables0: {}
+  additionalVariables1: {}
+
+jobs:
+
+  - job: templateJob
+    displayName: 'tmpl: job'
+    continueOnError: false
+    dependsOn: job00
+    pool:
+      vmImage: $(VMIMAGENAME)
+    variables:
+      # Place our template parameters into the job variables.
+      # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
+      # FIXME - Note the multiple ${{ insert }} keys here.
+      #         FIXME your IDE MAY mark this as an error (it probably thinks its a dupe key)
+      #         FIXME the ADO Pipeline YAML composer does honour it though and it does work.
+      ${{ insert }}: ${{ parameters.additionalVariables0 }}
+      ${{ insert }}: ${{ parameters.additionalVariables1 }}
+      STAGE00_TEMPL_VAR: 'STATIC_TMPL_JOB_VAR'
+
+    steps:
+
+      # display the env vars BEFORE we insert any via bash tasks
+      - task: Bash@3
+        displayName: '01 tmpl job env dump'
+        name: envDump0
+        inputs:
+          targetType: 'inline'
+          script: 'env | sort | grep 00' # here we print all th
+
+      # insert the additionalVarliables0 param into the env
+      - task: Bash@3
+        displayName: '02 additionalVariables0 env dump '
+        name: envDump1
+        inputs:
+          targetType: 'inline'
+          script: 'env | sort | grep 00' # here we print all the env vars, sort them alphabetically and then only show the ones that contain `00`
+        env:
+          # Place our template parameters into the task environment.
+          # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
+          ${{ insert }}: ${{ parameters.additionalVariables0 }}
+
+      # insert the additionalVarliables1 param into the env
+      - task: Bash@3
+        displayName: '03 additionalVariables1 env dump'
+        name: envDump2
+        inputs:
+          targetType: 'inline'
+          script: 'env | sort | grep 00'  # here we print all the env vars, sort them alphabetically and then only show the ones that contain `00`
+        env:
+          # Place our template parameters into the task environment.
+          # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
+          ${{ insert }}: ${{ parameters.additionalVariables1 }}
+
+      # display the env vars AFTER we were done with insertions.
+      - task: Bash@3
+        displayName: '04 tmpl job env dump'
+        name: envDump3
+        inputs:
+          targetType: 'inline'
+          script: 'env | sort | grep 00' # here we print all th
