@@ -31,7 +31,7 @@ jobs:
         name: envDump0
         inputs:
           targetType: 'inline'
-          script: 'env | sort | grep 00' # here we print all th
+          script: 'env | sort'
 
       # insert the additionalVarliables0 param into the env
       - task: Bash@3
@@ -39,7 +39,7 @@ jobs:
         name: envDump1
         inputs:
           targetType: 'inline'
-          script: 'env | sort | grep 00' # here we print all the env vars, sort them alphabetically and then only show the ones that contain `00`
+          script: 'env | sort'
         env:
           # Place our template parameters into the task environment.
           # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
@@ -51,7 +51,7 @@ jobs:
         name: envDump2
         inputs:
           targetType: 'inline'
-          script: 'env | sort | grep 00'  # here we print all the env vars, sort them alphabetically and then only show the ones that contain `00`
+          script: 'env | sort'
         env:
           # Place our template parameters into the task environment.
           # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
@@ -63,7 +63,7 @@ jobs:
         name: envDump3
         inputs:
           targetType: 'inline'
-          script: 'env | sort | grep 00' # here we print all th
+          script: 'env | sort'
 
   - deployment: templateDeploy
     displayName: 'tmpl: deploy'
@@ -76,7 +76,7 @@ jobs:
     # a) envName: 'STRING' or
     # b) envName: '${{ parameters.ENVIRONMENT_NAME }}'
     # If you try and pass in as a '$(VARNAME)' variable it wont expand to set this value correctly.
-    environment: ${{ parameters.deployEnvLabel }} #FIXME get this working later.
+    environment: ${{ parameters.deployEnvLabel }}
     variables:
       # Place our template parameters into the job variables.
       # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
@@ -85,6 +85,7 @@ jobs:
       #         FIXME the ADO Pipeline YAML composer does honour it though and it does work.
       ${{ insert }}: ${{ parameters.additionalVariables0 }}
       ${{ insert }}: ${{ parameters.additionalVariables1 }}
+      TF_VAR_LOCATION1: ${{ parameters.TF_VAR_LOCATION1 }}
       STAGE00_TEMPL_DEPLOY_VAR: 'STATIC_TMPL_DEPLOY_VALUE'
 
     strategy:
@@ -93,10 +94,34 @@ jobs:
        deploy:
          steps:
 
-           # this task will dump ALL env vars available in the agent.
-           # you can add a `| grep ???` after the `sort` to filter values you're interested in.
-           - task: Bash@3
-             displayName: 'env dump'
-             inputs:
-               targetType: 'inline'
-               script: 'env | sort'
+          # insert the additionalVarliables0 param into the env
+          - task: Bash@3
+            displayName: '00 additionalVariables0 env dump '
+            name: envDump1
+            inputs:
+              targetType: 'inline'
+              script: 'env | sort'
+            env:
+              # Place our template parameters into the task environment.
+              # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
+              ${{ insert }}: ${{ parameters.additionalVariables0 }}
+
+          # insert the additionalVarliables1 param into the env
+          - task: Bash@3
+            displayName: '01 additionalVariables1 env dump'
+            name: envDump2
+            inputs:
+              targetType: 'inline'
+              script: 'env | sort'
+            env:
+              # Place our template parameters into the task environment.
+              # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/templates?view=azure-devops#insertion
+              ${{ insert }}: ${{ parameters.additionalVariables1 }}
+
+          # this task will dump ALL env vars available in the agent.
+          # you can add a `| grep ???` after the `sort` to filter values you're interested in.
+          - task: Bash@3
+            displayName: '02 env dump'
+            inputs:
+              targetType: 'inline'
+              script: 'env | sort'

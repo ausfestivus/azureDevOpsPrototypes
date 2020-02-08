@@ -105,7 +105,7 @@ stages:
             displayName: 'env dump'
             inputs:
               targetType: 'inline'
-              script: 'env | sort | grep 00'
+              script: 'env | sort'
 
       # define our second job which will pull a variable out of the first job
       - job: job01
@@ -119,6 +119,7 @@ stages:
           STAGE00_JOB01_VAR01: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR00'] ]
           STAGE00_JOB01_VAR02: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR01'] ]
           STAGE00_JOB01_VAR03: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR02'] ]
+          STAGE00_JOB01_TF_VAR_LOCATION: $[ dependencies.job00.outputs['job00Bash00.TF_VAR_LOCATION'] ]
 
         steps:
           - checkout: none
@@ -140,7 +141,7 @@ stages:
             displayName: 'env dump'
             inputs:
               targetType: 'inline'
-              script: 'env | sort | grep 00'
+              script: 'env | sort'
 
       # here we pass our three job00 variables into a template for use in there.
       - template: ./multiple-vars-into-a-child-template.yaml
@@ -160,10 +161,13 @@ stages:
           # additionalVariables0 using `Sequence Format`
           additionalVariables0:
             # here we tell the pipeline yaml to go and get the var we want from job00 outputs.
-            STAGE00_TEMPL_ADDITIONALVARIABLES_VAR00: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR00'] ]
-            STAGE00_TEMPL_ADDITIONALVARIABLES_VAR01: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR01'] ]
-            STAGE00_TEMPL_ADDITIONALVARIABLES_VAR02: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR02'] ]
-            STAGE00_TEMPL_ADDITIONALVARIABLES_VAR03: 'TMPL_CONTENTS_STATIC_VAR_03'
-            TF_VAR_LOCATION: $[ dependencies.job00.outputs['job00Bash00.TF_VAR_LOCATION'] ]
+            # JOB00BASH00_STAGE00_JOB00_BASH00_VAR00=Larry_from_stage00_job00 ?
+            STAGE00_TEMPL_ADDITIONALVARIABLES0_VAR00: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR00'] ]
+            STAGE00_TEMPL_ADDITIONALVARIABLES0_VAR01: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR01'] ]
+            STAGE00_TEMPL_ADDITIONALVARIABLES0_VAR02: $[ dependencies.job00.outputs['job00Bash00.STAGE00_JOB00_BASH00_VAR02'] ]
+            STAGE00_TEMPL_ADDITIONALVARIABLES0_VAR03: 'TMPL_CONTENTS_STATIC_VAR_03'
+            STAGE00_TEMPL_ADDITIONALVARIABLES0_TF_VAR_LOCATION: $[ dependencies.job00.outputs['job00Bash00.TF_VAR_LOCATION'] ]
           # additionalVariables1 uses `Mapping Format`
-          additionalVariables1: { STAGE00_TEMPL_ADDITIONALVARIABLES_VAR04: 'TMPL_CONTENTS_STATIC_VAR_04', STAGE00_TEMPL_ADDITIONALVARIABLES_VAR05: 'TMPL_CONTENTS_STATIC_VAR_05'}
+          additionalVariables1: { STAGE00_TEMPL_ADDITIONALVARIABLES1_VAR04: 'TMPL_CONTENTS_STATIC_VAR_04', STAGE00_TEMPL_ADDITIONALVARIABLES1_VAR05: 'TMPL_CONTENTS_STATIC_VAR_05'}
+          #TF_VAR_LOCATION1: $[ dependencies.job00.job00Bash00.outputs['job00.job00Bash00.TF_VAR_LOCATION'] ]
+          TF_VAR_LOCATION1: $[ dependencies.job00.outputs['job00Bash00.TF_VAR_LOCATION'] ]
